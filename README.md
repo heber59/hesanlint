@@ -1,5 +1,9 @@
 # hesanlint
 
+
+ version 0.1 just first iteration...
+
+
 **Performance-first static analysis for React / Next.js.**  
 Catches the bugs ESLint misses — infinite re-render loops, bundle killers, broken memoization — before they reach production.
 
