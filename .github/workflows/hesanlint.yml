@@ -1,0 +1,33 @@
+name: hesanlint
+
+on:
+  pull_request:
+    paths:
+      - '**/*.js'
+      - '**/*.jsx'
+      - '**/*.ts'
+      - '**/*.tsx'
+  push:
+    branches:
+      - main
+
+jobs:
+  lint:
+    name: Performance Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run hesanlint
+        run: npx hesanlint ./src --ci --score
+        # Outputs:
+        #   ::error file=...,line=...:: inline PR annotations
+        #   Performance score in Job Summary
+        #   Exit code 1 if any errors found (blocks merge)
