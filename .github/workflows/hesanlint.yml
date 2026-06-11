@@ -4,23 +4,17 @@ on:
   pull_request:
     branches:
       - main
-    paths:
-      - "**/*.js"
-      - "**/*.jsx"
-      - "**/*.ts"
-      - "**/*.tsx"
-      - "package.json"
   push:
     branches:
       - main
 
 jobs:
   # ─────────────────────────────────────────────
-  # 1. BUILD — bundle hesanlint so npx works
-  #    This is the fix for ERR_MODULE_NOT_FOUND.
-  #    esbuild inlines commander + all deps into
-  #    a single bin/hesanlint.js — no node_modules
-  #    needed at runtime.
+  # 1. BUILD — runs on both PR and push to main
+  #    Bundles hesanlint with esbuild so all deps
+  #    (commander, chalk, etc.) are inlined into
+  #    a single bin/hesanlint.js — fixes
+  #    ERR_MODULE_NOT_FOUND at runtime.
   # ─────────────────────────────────────────────
   build:
     name: Build
@@ -36,8 +30,6 @@ jobs:
         run: npm install
 
       - name: Bundle with esbuild
-        # Produces a self-contained bin/hesanlint.js
-        # All deps (commander, chalk, etc.) are inlined.
         run: |
           npx esbuild src/cli.js \
             --bundle \
@@ -53,14 +45,13 @@ jobs:
           path: bin/hesanlint.js
 
   # ─────────────────────────────────────────────
-  # 2. LINT — run hesanlint against ./src
-  #    Uses the bundle from the build step so
-  #    there are no missing-dep surprises.
+  # 2. LINT — only on push to main
   # ─────────────────────────────────────────────
   lint:
     name: Performance Lint
     runs-on: ubuntu-latest
     needs: build
+    if: github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4
 
@@ -78,11 +69,13 @@ jobs:
         run: node bin/hesanlint.js ./src --ci --score
 
   # ─────────────────────────────────────────────
-  # 3. TEST
+  # 3. TEST — only on push to main
   # ─────────────────────────────────────────────
   test:
     name: Tests
     runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4
 
@@ -98,22 +91,11 @@ jobs:
 
   # ─────────────────────────────────────────────
   # 4. AUTO RELEASE — only on push to main
-  #    Uses `auto shipit` which:
-  #      • reads PR labels (major/minor/patch)
-  #      • bumps package.json version
-  #      • commits + creates a git tag
-  #      • creates a GitHub Release
-  #      • runs npm publish
-  #
-  #    Required setup (one-time):
-  #      1. npx auto create-labels  (needs GH_TOKEN)
-  #      2. Add .autorc to repo root (see below)
-  #      3. Add GH_TOKEN + NPM_TOKEN to repo secrets
   # ─────────────────────────────────────────────
   autorelease:
     name: Auto Release
     runs-on: ubuntu-latest
-    needs: [build, test]
+    needs: [lint, test]
     if: |
       github.event_name == 'push' &&
       !contains(github.event.head_commit.message, 'ci skip') &&
@@ -122,7 +104,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.GH_TOKEN }}
-          fetch-depth: 0 # required: auto needs full git history to find last tag
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -143,8 +125,6 @@ jobs:
         run: npm install
 
       - name: Bundle with esbuild
-        # Re-bundle here so the published package has
-        # the self-contained bin/hesanlint.js baked in.
         run: |
           npx esbuild src/cli.js \
             --bundle \
