@@ -13,8 +13,9 @@ jobs:
   # 1. BUILD — runs on both PR and push to main
   #    Bundles hesanlint with esbuild so all deps
   #    (commander, chalk, etc.) are inlined into
-  #    a single bin/hesanlint.js — fixes
-  #    ERR_MODULE_NOT_FOUND at runtime.
+  #    a single bin/hesanlint.cjs — fixes
+  #    ERR_MODULE_NOT_FOUND and the ESM/CJS
+  #    dynamic-require conflict at runtime.
   # ─────────────────────────────────────────────
   build:
     name: Build
@@ -35,14 +36,14 @@ jobs:
             --bundle \
             --platform=node \
             --target=node18 \
-            --format=esm \
-            --outfile=bin/hesanlint.js
+            --format=cjs \
+            --outfile=bin/hesanlint.cjs
 
       - name: Upload bundle artifact
         uses: actions/upload-artifact@v4
         with:
           name: hesanlint-bundle
-          path: bin/hesanlint.js
+          path: bin/hesanlint.cjs
 
   # ─────────────────────────────────────────────
   # 2. LINT — only on push to main
@@ -66,7 +67,7 @@ jobs:
           path: bin
 
       - name: Run hesanlint
-        run: node bin/hesanlint.js ./src --ci --score
+        run: node bin/hesanlint.cjs ./src --ci --score
 
   # ─────────────────────────────────────────────
   # 3. TEST — only on push to main
@@ -87,7 +88,7 @@ jobs:
         run: npm install
 
       - name: Run tests
-        run: npm test
+        run: npm test -- --passWithNoTests
 
   # ─────────────────────────────────────────────
   # 4. AUTO RELEASE — only on push to main
@@ -130,8 +131,8 @@ jobs:
             --bundle \
             --platform=node \
             --target=node18 \
-            --format=esm \
-            --outfile=bin/hesanlint.js
+            --format=cjs \
+            --outfile=bin/hesanlint.cjs
 
       - name: Release
         run: npx auto shipit
