@@ -10,14 +10,7 @@ on:
 
 jobs:
   # ─────────────────────────────────────────────
-  # 1. BUILD — runs on both PR and push to main
-  #    --format=esm keeps import.meta.url intact.
-  #    --packages=external skips bundling node
-  #    built-ins (node:events etc.) and npm deps,
-  #    so they resolve from node_modules at runtime.
-  #    This fixes both ERR_MODULE_NOT_FOUND and
-  #    the dynamic-require / import.meta undefined
-  #    errors we hit with full bundling.
+  # 1. BUILD — runs on PR and push to main
   # ─────────────────────────────────────────────
   build:
     name: Build
@@ -46,8 +39,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: hesanlint-build
-          # Upload the whole repo so node_modules
-          # are available when the lint job runs.
           path: |
             bin/hesanlint.js
             node_modules
@@ -110,7 +101,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GH_TOKEN }}
+          token: ${{ secrets.GH_TOKEN || github.token }}
           fetch-depth: 0
 
       - uses: actions/setup-node@v4
@@ -128,8 +119,10 @@ jobs:
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Install dependencies
-        run: npm install
+      - name: Install dependencies + auto plugins
+        # Install auto and its plugins explicitly so auto
+        # doesn't get confused looking for config files.
+        run: npm install && npm install --save-dev auto @auto-it/npm @auto-it/released
 
       - name: Bundle with esbuild
         run: |
@@ -142,7 +135,9 @@ jobs:
             --outfile=bin/hesanlint.js
 
       - name: Release
-        run: npx auto shipit
+        # --config flag tells auto exactly where .autorc is,
+        # so it never accidentally picks up another YAML file.
+        run: npx auto shipit --config .autorc
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
