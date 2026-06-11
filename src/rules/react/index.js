@@ -58,6 +58,23 @@ export function checkReact(ast, filePath) {
           });
         }
       }
+
+      // tailwind-unsafe-class-concat: className={`px-4 ${cls}`} or className={`text-${size}`}
+      if (attrName === 'className' && expr.type === 'TemplateLiteral' && expr.expressions.length > 0) {
+        const hasTailwindQuasi = expr.quasis.some(q =>
+          TAILWIND_CLASS_PREFIX.test((q.value.cooked ?? '').trim())
+        );
+        if (hasTailwindQuasi) {
+          violations.push({
+            rule: 'tailwind-unsafe-class-concat',
+            severity: 'warn',
+            message: `Template literal in className breaks Tailwind JIT — dynamic expressions prevent static class analysis and classes may be purged.`,
+            line: expr.loc?.start.line ?? 1,
+            col: expr.loc?.start.column ?? 0,
+            fix: 'Use clsx() or cn(): className={clsx("px-4", condition && "bg-blue-500")}',
+          });
+        }
+      }
     },
 
     // missing-key-prop + no-array-index-key (map-aware)
