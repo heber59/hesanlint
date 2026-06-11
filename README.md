@@ -203,7 +203,3 @@ Commands:
 ```
 
 ---
-
-## License
-
-MIT
