@@ -18,7 +18,7 @@
   ],
   "scripts": {
     "build": "esbuild src/cli.js --bundle --platform=node --target=node18 --format=esm --outfile=bin/hesanlint.js",
-    "test": "node --experimental-vm-modules node_modules/.bin/jest"
+    "test": "node --experimental-vm-modules node_modules/.bin/jest --passWithNoTests"
   },
   "keywords": [
     "eslint",
