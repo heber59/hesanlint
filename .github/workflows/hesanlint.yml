@@ -133,8 +133,8 @@ jobs:
             --packages=external \
             --outfile=bin/hesanlint.js
 
-   name: Release
-  run: npx auto shipit
-  env:
-    GH_TOKEN: ${{ secrets.GH_TOKEN }}
-    NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Release
+        run: npx auto shipit
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
