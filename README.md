@@ -1,8 +1,6 @@
 # hesanlint
 
-
- version 0.1 just first iteration...
-
+version 0.1 just first iteration...
 
 **Performance-first static analysis for React / Next.js.**  
 Catches the bugs ESLint misses — infinite re-render loops, bundle killers, broken memoization — before they reach production.
@@ -31,16 +29,16 @@ Performance Score   62/100  ████████████░░░░░�
 
 ESLint catches syntax and style. It does not catch:
 
-| Problem | Impact | ESLint |
-|---|---|---|
-| `import _ from 'lodash'` | +70kb in your bundle | not detected |
-| `useEffect(() => {}, [{ id }])` | infinite re-render loop | not detected |
-| `useState(heavyCompute())` | recomputes every render | not detected |
-| `async` callback in `useEffect` | swallowed Promise, broken cleanup | plugin only |
-| `${p => p.color}` in styled-component | new CSS class per render, GC pressure | nothing |
-| `export * from 'external-pkg'` | kills tree-shaking for consumers | plugin only |
-| circular imports across 40 files | build slowdowns, runtime bugs | plugin only |
-| arrow vs declaration mixed across project | broken Fast Refresh, inconsistent DX | per-file only |
+| Problem                                   | Impact                                | ESLint        |
+| ----------------------------------------- | ------------------------------------- | ------------- |
+| `import _ from 'lodash'`                  | +70kb in your bundle                  | not detected  |
+| `useEffect(() => {}, [{ id }])`           | infinite re-render loop               | not detected  |
+| `useState(heavyCompute())`                | recomputes every render               | not detected  |
+| `async` callback in `useEffect`           | swallowed Promise, broken cleanup     | plugin only   |
+| `${p => p.color}` in styled-component     | new CSS class per render, GC pressure | nothing       |
+| `export * from 'external-pkg'`            | kills tree-shaking for consumers      | plugin only   |
+| circular imports across 40 files          | build slowdowns, runtime bugs         | plugin only   |
+| arrow vs declaration mixed across project | broken Fast Refresh, inconsistent DX  | per-file only |
 
 hesanlint is a single `npx` command that flags all of the above, with a line-level fix hint for each one.
 
@@ -88,49 +86,54 @@ npx hesanlint ./src --format json
 ## Rules
 
 ### Imports — bundle size
-| Rule | Default | What it catches |
-|---|---|---|
-| `no-heavy-default-import` | error | `import _ from 'lodash'` — shows kb cost, suggests named import |
-| `no-barrel-namespace-import` | error | `import * as Icons from 'react-icons'` — imports entire package |
-| `no-duplicate-imports` | warn | same source imported twice — auto-fixable with `--fix` |
-| `no-large-barrel-import` | warn | 5+ specifiers from an `index` barrel file |
-| `no-require-in-esm` | warn | `require()` inside an ES module — breaks static analysis |
-| `no-unexpected-side-effect-import` | warn | bare `import 'lib'` outside entry points |
+
+| Rule                               | Default | What it catches                                                 |
+| ---------------------------------- | ------- | --------------------------------------------------------------- |
+| `no-heavy-default-import`          | error   | `import _ from 'lodash'` — shows kb cost, suggests named import |
+| `no-barrel-namespace-import`       | error   | `import * as Icons from 'react-icons'` — imports entire package |
+| `no-duplicate-imports`             | warn    | same source imported twice — auto-fixable with `--fix`          |
+| `no-large-barrel-import`           | warn    | 5+ specifiers from an `index` barrel file                       |
+| `no-require-in-esm`                | warn    | `require()` inside an ES module — breaks static analysis        |
+| `no-unexpected-side-effect-import` | warn    | bare `import 'lib'` outside entry points                        |
 
 ### Hooks — correctness
-| Rule | Default | What it catches |
-|---|---|---|
-| `useeffect-async-callback` | error | `useEffect(async () => {})` — returns a Promise instead of a cleanup |
-| `useeffect-object-dep` | error | inline object/array in the deps array — new reference every render = infinite loop |
-| `usememo-missing-deps` | error | `useMemo(fn)` with no deps array — recomputes every render |
-| `hook-in-conditional` | error | hook called inside an `if`, loop, or ternary — violates Rules of Hooks |
-| `useeffect-missing-deps` | warn | `useEffect(fn)` with no deps array — runs after every render |
-| `useeffect-empty-deps-complex-body` | warn | empty `[]` + complex body — possible stale closure |
-| `usestate-lazy-init` | warn | `useState(expensiveCall())` — call runs on every render |
-| `usememo-empty-deps` | info | `useMemo(fn, [])` — consider hoisting outside the component |
+
+| Rule                                | Default | What it catches                                                                    |
+| ----------------------------------- | ------- | ---------------------------------------------------------------------------------- |
+| `useeffect-async-callback`          | error   | `useEffect(async () => {})` — returns a Promise instead of a cleanup               |
+| `useeffect-object-dep`              | error   | inline object/array in the deps array — new reference every render = infinite loop |
+| `usememo-missing-deps`              | error   | `useMemo(fn)` with no deps array — recomputes every render                         |
+| `hook-in-conditional`               | error   | hook called inside an `if`, loop, or ternary — violates Rules of Hooks             |
+| `useeffect-missing-deps`            | warn    | `useEffect(fn)` with no deps array — runs after every render                       |
+| `useeffect-empty-deps-complex-body` | warn    | empty `[]` + complex body — possible stale closure                                 |
+| `usestate-lazy-init`                | warn    | `useState(expensiveCall())` — call runs on every render                            |
+| `usememo-empty-deps`                | info    | `useMemo(fn, [])` — consider hoisting outside the component                        |
 
 ### Functions & exports — consistency + tree-shaking
-| Rule | Default | What it catches |
-|---|---|---|
-| `no-anonymous-default-export` | warn | `export default function()` — breaks React Fast Refresh |
-| `consistent-component-style` | warn | **project-wide**: majority vote across all files, flags the minority style |
-| `no-default-export-object` | error | `export default { a, b }` — 0% tree-shaking for consumers |
-| `no-wildcard-external-reexport` | error | `export * from 'external-pkg'` — re-exports the whole package |
+
+| Rule                            | Default | What it catches                                                            |
+| ------------------------------- | ------- | -------------------------------------------------------------------------- |
+| `no-anonymous-default-export`   | warn    | `export default function()` — breaks React Fast Refresh                    |
+| `consistent-component-style`    | warn    | **project-wide**: majority vote across all files, flags the minority style |
+| `no-default-export-object`      | error   | `export default { a, b }` — 0% tree-shaking for consumers                  |
+| `no-wildcard-external-reexport` | error   | `export * from 'external-pkg'` — re-exports the whole package              |
 
 ### React — render performance
-| Rule | Default | What it catches |
-|---|---|---|
-| `missing-key-prop` | error | JSX element in `.map()` without a `key` |
-| `no-inline-function-prop` | warn | `onClick={() => …}` — new reference every render, breaks `React.memo` |
-| `no-inline-style-object` | warn | `style={{ … }}` — same problem |
-| `no-array-index-key` | warn | `key={n}` where `n` is the `.map()` index parameter (tracks the actual param name, not a hardcoded list) |
-| `tailwind-unsafe-class-concat` | warn | `className={'px-4 ' + cls}` — dynamic class names are purged by Tailwind JIT |
-| `styled-components-props-interpolation` | warn | `${p => p.color}` — generates a new CSS class on every prop change |
+
+| Rule                                    | Default | What it catches                                                                                          |
+| --------------------------------------- | ------- | -------------------------------------------------------------------------------------------------------- |
+| `missing-key-prop`                      | error   | JSX element in `.map()` without a `key`                                                                  |
+| `no-inline-function-prop`               | warn    | `onClick={() => …}` — new reference every render, breaks `React.memo`                                    |
+| `no-inline-style-object`                | warn    | `style={{ … }}` — same problem                                                                           |
+| `no-array-index-key`                    | warn    | `key={n}` where `n` is the `.map()` index parameter (tracks the actual param name, not a hardcoded list) |
+| `tailwind-unsafe-class-concat`          | warn    | `className={'px-4 ' + cls}` — dynamic class names are purged by Tailwind JIT                             |
+| `styled-components-props-interpolation` | warn    | `${p => p.color}` — generates a new CSS class on every prop change                                       |
 
 ### Architecture
-| Rule | Default | What it catches |
-|---|---|---|
-| `no-dependency-cycle` | error | circular imports across the whole project (via [madge](https://github.com/pahen/madge)) |
+
+| Rule                  | Default | What it catches                                                                         |
+| --------------------- | ------- | --------------------------------------------------------------------------------------- |
+| `no-dependency-cycle` | error   | circular imports across the whole project (via [madge](https://github.com/pahen/madge)) |
 
 ---
 
@@ -158,11 +161,7 @@ Drop this in `.github/workflows/hesanlint.yml` and every PR gets inline annotati
     "no-heavy-default-import": "error",
     "tailwind-unsafe-class-concat": "warn"
   },
-  "ignore": [
-    "**/*.stories.*",
-    "**/*.test.*",
-    "**/pages/**"
-  ]
+  "ignore": ["**/*.stories.*", "**/*.test.*", "**/pages/**"]
 }
 ```
 
@@ -206,3 +205,5 @@ Commands:
 ## License
 
 MIT
+
+El más interesante para corregir en hesanlint es el de Tailwind — tienes la regla pero no está disparando en template literals con ternarios. Vale la pena investigar ese caso.
