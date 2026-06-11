@@ -206,5 +206,3 @@ Commands:
 
 MIT
 
-El más interesante para corregir en hesanlint es el de Tailwind — tienes la regla pero no está disparando en template literals con ternarios. Vale la pena investigar ese caso.
-Mostrar más7:35 p. m.Perfecto, el fix es simple. Agrega npm install antes de correr hesanlint, y cambia ./src por . ya que tu proyecto no tiene carpeta src:
