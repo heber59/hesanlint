@@ -120,8 +120,7 @@ jobs:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Install dependencies + auto plugins
-        # Install auto and its plugins explicitly so auto
-        # doesn't get confused looking for config files.
+
         run: npm install && npm install --save-dev auto @auto-it/npm @auto-it/released
 
       - name: Bundle with esbuild
@@ -135,9 +134,8 @@ jobs:
             --outfile=bin/hesanlint.js
 
       - name: Release
-        # --config flag tells auto exactly where .autorc is,
-        # so it never accidentally picks up another YAML file.
-        run: npx auto shipit --config .autorc
+
+        run: npx auto shipit .autorc
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
