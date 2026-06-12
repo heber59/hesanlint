@@ -8,3 +8,5 @@ dist/
 bin/hesanlint.js
 .npmrc.npmrc
 package-lock.json
+bin/hesanlint.js
+.npmrc
