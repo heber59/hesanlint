@@ -2,13 +2,16 @@ name: CI & Auto Release
 
 on:
   pull_request:
-    branches: [main]
+    branches:
+      - main
 
   push:
-    branches: [main]
+    branches:
+      - main
 
 jobs:
   build:
+    name: Build
     runs-on: ubuntu-latest
 
     steps:
@@ -16,13 +19,15 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: "20"
 
-      - run: npm install
+      - name: Install dependencies
+        run: npm install
 
-      - run: mkdir -p dist
+      - name: Create dist directory
+        run: mkdir -p dist
 
-      - name: Bundle
+      - name: Bundle CLI
         run: |
           npx esbuild src/cli.js \
             --bundle \
@@ -32,49 +37,68 @@ jobs:
             --packages=external \
             --outfile=dist/cli.js
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: build
-          path: |
-            dist
-            package.json
-            bin
+      - name: Verify launcher
+        run: |
+          head -1 bin/hesanlint.js
+          test "$(head -1 bin/hesanlint.js)" = "#!/usr/bin/env node"
 
   lint:
+    name: Performance Lint
+    runs-on: ubuntu-latest
     needs: build
     if: github.event_name == 'push'
-    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: "20"
 
-      - run: npm install
+      - name: Install dependencies
+        run: npm install
 
-      - run: node bin/hesanlint.js ./src --ci --score
+      - name: Create dist directory
+        run: mkdir -p dist
+
+      - name: Bundle CLI
+        run: |
+          npx esbuild src/cli.js \
+            --bundle \
+            --platform=node \
+            --target=node18 \
+            --format=esm \
+            --packages=external \
+            --outfile=dist/cli.js
+
+      - name: Run hesanlint
+        run: node bin/hesanlint.js ./src --ci --score
 
   test:
+    name: Tests
+    runs-on: ubuntu-latest
     needs: build
     if: github.event_name == 'push'
-    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: "20"
 
-      - run: npm install
+      - name: Install dependencies
+        run: npm install
 
-      - run: npm test -- --passWithNoTests
+      - name: Run tests
+        run: npm test -- --passWithNoTests
 
   autorelease:
-    needs: [lint, test]
+    name: Auto Release
     runs-on: ubuntu-latest
+    needs:
+      - lint
+      - test
 
     if: |
       github.event_name == 'push' &&
@@ -89,14 +113,21 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
-          registry-url: https://registry.npmjs.org/
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org/"
 
-      - run: npm install
+      - name: Configure Git
+        run: |
+          git config --global user.email "hesan0308@gmail.com"
+          git config --global user.name "hesan0308"
 
-      - run: mkdir -p dist
+      - name: Install dependencies
+        run: npm install
 
-      - name: Bundle
+      - name: Create dist directory
+        run: mkdir -p dist
+
+      - name: Bundle CLI
         run: |
           npx esbuild src/cli.js \
             --bundle \
@@ -106,13 +137,24 @@ jobs:
             --packages=external \
             --outfile=dist/cli.js
 
-      - name: Verify executable
+      - name: Verify launcher
         run: |
-          head -1 bin/hesanlint.js
-          test "$(head -1 bin/hesanlint.js)" = "#!/usr/bin/env node"
+          echo "Launcher:"
+          head -3 bin/hesanlint.js
 
-      - run: npx auto shipit
+          FIRST_LINE="$(head -1 bin/hesanlint.js)"
+
+          if [ "$FIRST_LINE" != "#!/usr/bin/env node" ]; then
+            echo "bin/hesanlint.js was overwritten"
+            exit 1
+          fi
+
+      - name: Verify bundle exists
+        run: |
+          test -f dist/cli.js
+
+      - name: Release
+        run: npx auto shipit
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
