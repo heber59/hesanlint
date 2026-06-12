@@ -115,16 +115,21 @@ jobs:
           git config --global user.name hesan0308
 
       - name: Configure npm auth
-        run: echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" >> .npmrc
+        # .npmrc is untracked — add to .gitignore so auto doesn't see it as dirty
+        run: |
+          echo ".npmrc" >> .gitignore
+          echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" >> .npmrc
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Install dependencies + auto plugins
-
         run: npm install && npm install --save-dev auto @auto-it/npm @auto-it/released
 
       - name: Bundle with esbuild
+        # bin/hesanlint.js is a build artifact — add to .gitignore
+        # so auto doesn't treat it as an uncommitted change.
         run: |
+          echo "bin/hesanlint.js" >> .gitignore
           npx esbuild src/cli.js \
             --bundle \
             --platform=node \
@@ -132,6 +137,14 @@ jobs:
             --format=esm \
             --packages=external \
             --outfile=bin/hesanlint.js
+
+      - name: Commit gitignore + lockfile changes
+        # Commit any dirty files auto would complain about
+        # (package-lock.json from npm install, .gitignore updates).
+        # The [skip ci] tag prevents this commit from re-triggering the workflow.
+        run: |
+          git add .gitignore package-lock.json
+          git diff --staged --quiet || git commit -m "chore: ci build artifacts [skip ci]"
 
       - name: Release
         run: npx auto shipit
