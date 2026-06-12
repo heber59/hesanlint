@@ -6,6 +6,5 @@ coverage/
 dist/
 .env
 package-lock.json
-bin/hesanlint.js
 .npmrc
 node_modules
