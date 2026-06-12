@@ -1,12 +1,11 @@
-node_modules/
+
 npm-debug.log*
 *.log
 .DS_Store
 coverage/
 dist/
 .env
-bin/hesanlint.js
-.npmrc.npmrc
 package-lock.json
 bin/hesanlint.js
 .npmrc
+node_modules
