@@ -6,17 +6,16 @@
   "bin": {
     "hesanlint": "./bin/hesanlint.js"
   },
-  "files": [
-    "bin",
-    "dist",
-    "src",
-    "README.md",
-    ".hesanlintrc.json"
-  ],
   "main": "./src/runner.js",
   "exports": {
     ".": "./src/runner.js"
   },
+  "files": [
+    "bin",
+    "src",
+    ".hesanlintrc.json",
+    "README.md"
+  ],
   "scripts": {
     "test": "node --experimental-vm-modules node_modules/.bin/jest --passWithNoTests"
   },

@@ -2,27 +2,27 @@ name: CI & Auto Release
 
 on:
   pull_request:
-    branches:
-      - main
+    branches: [main]
+
   push:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
   build:
-    name: Build
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: 20
 
-      - name: Install dependencies
-        run: npm install
+      - run: npm ci
 
-      - name: Bundle with esbuild
+      - run: mkdir -p dist
+
+      - name: Bundle
         run: |
           npx esbuild src/cli.js \
             --bundle \
@@ -30,82 +30,73 @@ jobs:
             --target=node18 \
             --format=esm \
             --packages=external \
-            --outfile=bin/hesanlint.js
+            --outfile=dist/cli.js
 
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
-          name: hesanlint-build
+          name: build
           path: |
-            bin/hesanlint.js
-            node_modules
+            dist
+            package.json
+            bin
 
   lint:
-    name: Performance Lint
-    runs-on: ubuntu-latest
     needs: build
     if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: 20
 
-      - name: Download build artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: hesanlint-build
+      - run: npm ci
 
-      - name: Run hesanlint
-        run: node bin/hesanlint.js ./src --ci --score
+      - run: node bin/hesanlint.js ./src --ci --score
 
   test:
-    name: Tests
-    runs-on: ubuntu-latest
     needs: build
     if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: 20
 
-      - name: Install dependencies
-        run: npm install
+      - run: npm ci
 
-      - name: Run tests
-        run: npm test -- --passWithNoTests
+      - run: npm test -- --passWithNoTests
 
   autorelease:
-    name: Auto Release
-    runs-on: ubuntu-latest
     needs: [lint, test]
+    runs-on: ubuntu-latest
+
     if: |
       github.event_name == 'push' &&
       !contains(github.event.head_commit.message, 'ci skip') &&
       !contains(github.event.head_commit.message, 'skip ci')
+
     steps:
       - uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GH_TOKEN }}
           fetch-depth: 0
+          token: ${{ secrets.GH_TOKEN }}
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
-          registry-url: "https://registry.npmjs.org/"
+          node-version: 20
+          registry-url: https://registry.npmjs.org/
 
-      - name: Configure Git
-        run: |
-          git config --global user.email hesan0308@gmail.com
-          git config --global user.name hesan0308
+      - run: npm ci
 
-      - name: Install dependencies
-        run: npm install
+      - run: mkdir -p dist
 
-      - name: Bundle with esbuild
+      - name: Bundle
         run: |
           npx esbuild src/cli.js \
             --bundle \
@@ -113,10 +104,14 @@ jobs:
             --target=node18 \
             --format=esm \
             --packages=external \
-            --outfile=bin/hesanlint.js
+            --outfile=dist/cli.js
 
-      - name: Release
-        run: npx auto shipit
+      - name: Verify executable
+        run: |
+          head -1 bin/hesanlint.js
+          test "$(head -1 bin/hesanlint.js)" = "#!/usr/bin/env node"
+
+      - run: npx auto shipit
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
