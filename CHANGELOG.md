@@ -1,3 +1,15 @@
+# v0.1.2 (Fri Jun 12 2026)
+
+#### 🐛 Bug Fix
+
+- fix: restore bin entry point with shebang [#14](https://github.com/heber59/hesanlint/pull/14) ([@heber59](https://github.com/heber59))
+
+#### Authors: 1
+
+- Heber  Alvarez  ([@heber59](https://github.com/heber59))
+
+---
+
 # v0.1.1 (Fri Jun 12 2026)
 
 #### 🐛 Bug Fix
