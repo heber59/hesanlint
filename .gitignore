@@ -7,3 +7,4 @@ dist/
 .env
 bin/hesanlint.js
 .npmrc.npmrc
+package-lock.json
