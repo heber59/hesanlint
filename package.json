@@ -4,7 +4,7 @@
   "description": "Performance-first linter for React/Next.js — catches bundle killers ESLint misses",
   "type": "module",
   "bin": {
-    "hesanlint": "./bin/hesanlint.js"
+    "hesanlint": "bin/hesanlint.js"
   },
   "files": [
     "bin",
