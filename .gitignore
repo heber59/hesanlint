@@ -6,4 +6,4 @@ coverage/
 dist/
 .env
 bin/hesanlint.js
-.npmrc
+.npmrc.npmrc
