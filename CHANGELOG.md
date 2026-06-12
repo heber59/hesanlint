@@ -6,9 +6,8 @@
 
 #### Authors: 1
 
-- Heber  Alvarez  ([@heber59](https://github.com/heber59))
-
----
+- Heber Alvarez ([@heber59](https://github.com/heber59))
+  ..
 
 # v0.1.1 (Fri Jun 12 2026)
 
@@ -39,5 +38,5 @@
 
 #### Authors: 2
 
-- Heber  Alvarez  ([@heber59](https://github.com/heber59))
+- Heber Alvarez ([@heber59](https://github.com/heber59))
 - Heber Alvarez (heber.alvarez@sercote.com)
