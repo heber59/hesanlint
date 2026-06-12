@@ -52,7 +52,7 @@ jobs:
         with:
           node-version: 20
 
-      - run: npm ci
+      - run: npm install
 
       - run: node bin/hesanlint.js ./src --ci --score
 
@@ -68,7 +68,7 @@ jobs:
         with:
           node-version: 20
 
-      - run: npm ci
+      - run: npm install
 
       - run: npm test -- --passWithNoTests
 
@@ -92,7 +92,7 @@ jobs:
           node-version: 20
           registry-url: https://registry.npmjs.org/
 
-      - run: npm ci
+      - run: npm install
 
       - run: mkdir -p dist
 
