@@ -1,6 +1,6 @@
 {
   "name": "hesanlint",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Performance-first linter for React/Next.js — catches bundle killers ESLint misses",
   "type": "module",
   "bin": {
