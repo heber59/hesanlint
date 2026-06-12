@@ -136,7 +136,10 @@ jobs:
             --format=esm \
             --packages=external \
             --outfile=dist/cli.js
-
+      - name: Verify npm package access
+        run: |
+          npm whoami
+          npm view hesanlint version
       - name: Verify launcher
         run: |
           echo "Launcher:"
