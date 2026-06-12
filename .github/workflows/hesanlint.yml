@@ -115,7 +115,11 @@ jobs:
           git config --global user.name hesan0308
 
       - name: Configure npm auth
-        run: echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" >> .npmrc
+        # git update-index --assume-unchanged hides the file from
+        # git status so auto never sees it as a dirty untracked file.
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" >> .npmrc
+          git update-index --assume-unchanged .npmrc 2>/dev/null || true
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
