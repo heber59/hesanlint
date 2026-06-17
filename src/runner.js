@@ -1,5 +1,5 @@
 import { existsSync, readFileSync, statSync } from 'fs';
-import { resolve, dirname, join } from 'path';
+import { resolve, dirname, join, relative, parse as parsePath } from 'path';
 import fg from 'fast-glob';
 const { globSync } = fg;
 import { parseFile } from './parser.js';
@@ -31,9 +31,24 @@ const FILE_CHECKERS = [
   checkReact,
 ];
 
-function loadConfig(cwd) {
-  const configPath = join(cwd, '.hesanlintrc.json');
-  if (!existsSync(configPath)) return { rules: {}, ignore: [] };
+function findConfig(startDir) {
+  let dir = startDir;
+  const { root } = parsePath(dir);
+  while (true) {
+    const configPath = join(dir, '.hesanlintrc.json');
+    if (existsSync(configPath)) return configPath;
+    if (dir === root) break;
+    const parent = dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return null;
+}
+
+function loadConfig(startDir) {
+  let configPath = findConfig(startDir);
+  if (!configPath) configPath = findConfig(process.cwd());
+  if (!configPath) return { rules: {}, ignore: [] };
   try {
     return JSON.parse(readFileSync(configPath, 'utf8'));
   } catch {
@@ -49,11 +64,13 @@ export async function run(targetPath, options = {}) {
     return 1;
   }
 
-  const config = loadConfig(process.cwd());
+  const isDir = statSync(absTarget).isDirectory();
+  const configStartDir = isDir ? absTarget : dirname(absTarget);
+  const config = loadConfig(configStartDir);
   const ignorePatterns = [...DEFAULT_IGNORE, ...(config.ignore ?? [])];
   if (options.ignore) ignorePatterns.push(options.ignore);
 
-  const isDirectory = statSync(absTarget).isDirectory();
+  const isDirectory = isDir;
 
   const files = isDirectory
     ? globSync('**/*.{js,jsx,ts,tsx}', {
@@ -69,6 +86,7 @@ export async function run(targetPath, options = {}) {
   }
 
   const allViolations = [];
+  const parseErrors = [];
   let totalFixed = 0;
 
   // Cycle detection runs on the whole directory
@@ -87,7 +105,8 @@ export async function run(targetPath, options = {}) {
     let ast;
     try {
       ast = parseFile(file);
-    } catch {
+    } catch (err) {
+      parseErrors.push({ file, message: err?.message ?? String(err) });
       continue;
     }
 
@@ -140,21 +159,22 @@ export async function run(targetPath, options = {}) {
     const offenderLabel = dominant === 'arrow' ? 'function declaration' : 'arrow function';
 
     for (const [file, styles] of projectStylesMap) {
-      const offender = styles.find((s) => s.style !== dominant);
-      if (!offender) continue;
-
       const severity = config.rules?.['consistent-component-style'] ?? 'warn';
       if (severity === 'off') continue;
 
-      allViolations.push({
-        rule: 'consistent-component-style',
-        severity,
-        message: `${offender.name} is a ${offenderLabel} but the project uses ${dominantLabel} (${arrowTotal} arrow vs ${declarationTotal} declaration across project).`,
-        line: offender.line,
-        col: 0,
-        file,
-        fix: `Convert to match project style: ${dominant === 'arrow' ? `const ${offender.name} = () => { ... }` : `function ${offender.name}() { ... }`}`,
-      });
+      for (const offender of styles) {
+        if (offender.style === dominant) continue;
+
+        allViolations.push({
+          rule: 'consistent-component-style',
+          severity,
+          message: `${offender.name} is a ${offenderLabel} but the project uses ${dominantLabel} (${arrowTotal} arrow vs ${declarationTotal} declaration across project).`,
+          line: offender.line,
+          col: 0,
+          file,
+          fix: `Convert to match project style: ${dominant === 'arrow' ? `const ${offender.name} = () => { ... }` : `function ${offender.name}() { ... }`}`,
+        });
+      }
     }
   }
 
@@ -167,7 +187,18 @@ export async function run(targetPath, options = {}) {
     options.format === 'json' ? jsonReport :
     terminalReport;
 
-  reporter(allViolations, files, options);
+  reporter(allViolations, files, options, parseErrors);
+
+  // Surface parse failures (json reporter includes them in its output object instead)
+  if (parseErrors.length > 0 && options.format !== 'json') {
+    console.warn(
+      `\nhesanlint: skipped ${parseErrors.length} file${parseErrors.length > 1 ? 's' : ''} that failed to parse`
+    );
+    for (const { file, message } of parseErrors) {
+      const rel = relative(process.cwd(), file);
+      console.warn(`  - ${rel}: ${message}`);
+    }
+  }
 
   return allViolations.some((v) => v.severity === 'error') ? 1 : 0;
 }

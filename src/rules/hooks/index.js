@@ -111,14 +111,17 @@ export function checkHooks(ast, filePath) {
 
       if (hookName === 'useState') {
         const init = node.arguments[0];
-        if (
-          init?.type === 'CallExpression' ||
-          (init?.type === 'ArrayExpression' && init.elements.length > 5)
-        ) {
+        const isExpensiveCall =
+          init?.type === 'CallExpression' && !isCheapCall(init.callee);
+        const isLargeArray =
+          init?.type === 'ArrayExpression' && init.elements.length > 5;
+        if (isExpensiveCall || isLargeArray) {
           violations.push({
             rule: 'usestate-lazy-init',
             severity: 'warn',
-            message: `useState() initializer is a function call or large array — this runs on every render. Use lazy initialization.`,
+            message: isLargeArray
+              ? `useState() initializer is a large array literal built on every render. Use lazy initialization.`
+              : `useState() initializer calls a function on every render, even though only the first value is used. Use lazy initialization.`,
             line: node.loc?.start.line ?? 1,
             col: node.loc?.start.column ?? 0,
             fix: 'Wrap in a function: useState(() => expensiveComputation())',
@@ -142,6 +145,16 @@ export function checkHooks(ast, filePath) {
   });
 
   return violations;
+}
+
+// Trivially-cheap global calls that shouldn't trigger usestate-lazy-init.
+const CHEAP_CALLEES = new Set([
+  'Boolean', 'Number', 'String', 'Array', 'Object',
+  'Symbol', 'BigInt', 'parseInt', 'parseFloat',
+]);
+
+function isCheapCall(callee) {
+  return callee?.type === 'Identifier' && CHEAP_CALLEES.has(callee.name);
 }
 
 function getHookName(callee) {

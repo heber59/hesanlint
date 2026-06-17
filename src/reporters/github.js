@@ -1,20 +1,16 @@
 import { appendFileSync } from 'fs';
+import { relative, sep } from 'path';
+import { calcScore } from '../score.js';
 
 export function githubReport(violations, files, options) {
-  const cwd = process.cwd() + '/';
-
   for (const v of violations) {
     const level = v.severity === 'error' ? 'error' : 'warning';
-    const file = v.file.startsWith(cwd) ? v.file.slice(cwd.length) : v.file;
+    const file = relative(process.cwd(), v.file).split(sep).join('/');
     console.log(`::${level} file=${file},line=${v.line},col=${v.col}::hesanlint[${v.rule}] ${v.message}`);
   }
 
   if (options.score) {
-    const errors = violations.filter((v) => v.severity === 'error').length;
-    const warns = violations.filter((v) => v.severity === 'warn').length;
-    const fileCount = files.length;
-    const penalty = errors * 10 + warns * 3;
-    const score = fileCount > 0 ? Math.max(0, Math.round(100 - penalty / fileCount)) : 100;
+    const score = calcScore(violations, files.length);
     console.log(`\nPerformance Score: ${score}/100`);
   }
 
@@ -28,7 +24,6 @@ export function githubReport(violations, files, options) {
 function buildMarkdownSummary(violations, files) {
   const errors = violations.filter((v) => v.severity === 'error').length;
   const warns = violations.filter((v) => v.severity === 'warn').length;
-  const cwd = process.cwd() + '/';
 
   let md = `\n## hesanlint\n\n`;
   md += `| Files scanned | Errors | Warnings |\n|:---:|:---:|:---:|\n`;
@@ -36,7 +31,7 @@ function buildMarkdownSummary(violations, files) {
   md += `| File | Line | Severity | Rule |\n|---|:---:|:---:|---|\n`;
 
   for (const v of violations.slice(0, 50)) {
-    const file = v.file.startsWith(cwd) ? v.file.slice(cwd.length) : v.file;
+    const file = relative(process.cwd(), v.file).split(sep).join('/');
     md += `| \`${file}\` | ${v.line} | ${v.severity} | \`${v.rule}\` |\n`;
   }
 

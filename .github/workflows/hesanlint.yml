@@ -24,19 +24,6 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Create dist directory
-        run: mkdir -p dist
-
-      - name: Bundle CLI
-        run: |
-          npx esbuild src/cli.js \
-            --bundle \
-            --platform=node \
-            --target=node18 \
-            --format=esm \
-            --packages=external \
-            --outfile=dist/cli.js
-
       - name: Verify launcher
         run: |
           head -1 bin/hesanlint.js
@@ -58,19 +45,6 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Create dist directory
-        run: mkdir -p dist
-
-      - name: Bundle CLI
-        run: |
-          npx esbuild src/cli.js \
-            --bundle \
-            --platform=node \
-            --target=node18 \
-            --format=esm \
-            --packages=external \
-            --outfile=dist/cli.js
-
       - name: Run hesanlint
         run: node bin/hesanlint.js ./src --ci --score
 
@@ -91,7 +65,7 @@ jobs:
         run: npm install
 
       - name: Run tests
-        run: npm test -- --passWithNoTests
+        run: npm test
 
   autorelease:
     name: Auto Release
@@ -124,18 +98,6 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Create dist directory
-        run: mkdir -p dist
-
-      - name: Bundle CLI
-        run: |
-          npx esbuild src/cli.js \
-            --bundle \
-            --platform=node \
-            --target=node18 \
-            --format=esm \
-            --packages=external \
-            --outfile=dist/cli.js
       - name: Verify npm package access
         run: |
           npm whoami
@@ -152,9 +114,6 @@ jobs:
             exit 1
           fi
 
-      - name: Verify bundle exists
-        run: |
-          test -f dist/cli.js
       - name: Configure npm
         run: |
           npm config set registry https://registry.npmjs.org/
