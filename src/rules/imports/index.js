@@ -55,7 +55,7 @@ export function checkImports(ast, filePath) {
           violations.push({
             rule: 'no-heavy-default-import',
             severity: 'error',
-            message: `Default import of "${source}" (~${heavy.estimatedKb}kb) blocks tree-shaking. Use: import { fn } from '${heavy.named}'`,
+            message: `Default/namespace import of "${source}" pulls the whole package (~${heavy.estimatedKb}kb published, approximate) and blocks tree-shaking. Use: import { fn } from '${heavy.named}'`,
             line,
             col,
             fix: `Replace with named imports: import { specificFunction } from '${heavy.named}'`,

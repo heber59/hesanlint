@@ -1,4 +1,6 @@
 import chalk from 'chalk';
+import { relative } from 'path';
+import { calcScore } from '../score.js';
 
 const SEVERITY_COLOR = {
   error: chalk.red,
@@ -16,7 +18,7 @@ export function terminalReport(violations, files, options) {
   const byFile = groupByFile(violations);
 
   for (const [file, fileViolations] of byFile) {
-    const relPath = file.replace(process.cwd() + '/', '');
+    const relPath = relative(process.cwd(), file);
     console.log('\n' + chalk.underline(relPath));
 
     for (const v of fileViolations) {
@@ -77,13 +79,3 @@ function printScore(violations, fileCount) {
   console.log(`\nPerformance Score  ${color.bold(String(score).padStart(3) + '/100')}  ${bar}`);
 }
 
-function calcScore(violations, fileCount) {
-  if (fileCount === 0) return 100;
-  const penalty = violations.reduce((acc, v) => {
-    if (v.severity === 'error') return acc + 10;
-    if (v.severity === 'warn') return acc + 3;
-    if (v.severity === 'info') return acc + 1;
-    return acc;
-  }, 0);
-  return Math.max(0, Math.round(100 - penalty / fileCount));
-}

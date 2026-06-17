@@ -83,7 +83,7 @@ export function checkReact(ast, filePath) {
 
       if (
         node.callee.type !== 'MemberExpression' ||
-        node.callee.property.name !== 'map'
+        (node.callee.property.name !== 'map' && node.callee.property.name !== 'flatMap')
       ) return;
 
       const callback = node.arguments[0];
@@ -104,7 +104,7 @@ export function checkReact(ast, filePath) {
           violations.push({
             rule: 'missing-key-prop',
             severity: 'error',
-            message: `JSX element returned from .map() is missing a "key" prop — causes O(n²) reconciliation.`,
+            message: `JSX element returned from .${node.callee.property.name}() is missing a "key" prop — causes O(n²) reconciliation.`,
             line: jsxEl.loc?.start.line ?? 1,
             col: jsxEl.loc?.start.column ?? 0,
             fix: 'Add a unique key: key={item.id}',
@@ -159,20 +159,44 @@ export function checkReact(ast, filePath) {
   return violations;
 }
 
+// Recursively unwrap Conditional/Logical/Parenthesized expressions down to the
+// actual JSXElement/JSXFragment nodes they can yield. Conservative: only real
+// JSX nodes are collected, so per-element key checking still applies.
+function collectJSX(node, out) {
+  if (!node) return;
+  switch (node.type) {
+    case 'JSXElement':
+    case 'JSXFragment':
+      out.push(node);
+      break;
+    case 'ParenthesizedExpression':
+      collectJSX(node.expression, out);
+      break;
+    case 'ConditionalExpression':
+      collectJSX(node.consequent, out);
+      collectJSX(node.alternate, out);
+      break;
+    case 'LogicalExpression':
+      collectJSX(node.right, out);
+      break;
+    default:
+      break;
+  }
+}
+
 function getReturnedJSX(body) {
-  if (body?.type === 'JSXElement' || body?.type === 'JSXFragment') {
-    return [body];
-  }
+  const out = [];
+
   if (body?.type === 'BlockStatement') {
-    return body.body
-      .filter(
-        (s) =>
-          s.type === 'ReturnStatement' &&
-          (s.argument?.type === 'JSXElement' || s.argument?.type === 'JSXFragment')
-      )
-      .map((s) => s.argument);
+    for (const s of body.body) {
+      if (s.type === 'ReturnStatement') collectJSX(s.argument, out);
+    }
+  } else {
+    // Concise arrow body (implicit return).
+    collectJSX(body, out);
   }
-  return [];
+
+  return out;
 }
 
 function hasReactImport(ast) {
