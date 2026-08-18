@@ -26,7 +26,9 @@
     ".": "./src/runner.js"
   },
   "scripts": {
-    "test": "node --experimental-vm-modules node_modules/.bin/jest"
+    "test": "node --experimental-vm-modules node_modules/.bin/jest",
+    "lint:evaluate": "node scripts/lint-evaluator-agent.js",
+    "release": "auto shipit"
   },
   "keywords": [
     "eslint",
@@ -56,6 +58,7 @@
     "madge": "^6.1.0"
   },
   "devDependencies": {
+    "auto": "^11.3.6",
     "jest": "^29.7.0"
   }
 }

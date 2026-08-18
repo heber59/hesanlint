@@ -22,7 +22,7 @@ jobs:
           node-version: "20"
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Verify launcher
         run: |
@@ -43,7 +43,7 @@ jobs:
           node-version: "20"
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Run hesanlint
         run: node bin/hesanlint.js ./src --ci --score
@@ -62,10 +62,13 @@ jobs:
           node-version: "20"
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Run tests
         run: npm test
+
+      - name: Evaluate lint CLI
+        run: npm run lint:evaluate
 
   autorelease:
     name: Auto Release
@@ -96,7 +99,14 @@ jobs:
           git config --global user.name "hesan0308"
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
+
+      - name: Configure npm
+        run: |
+          npm config set registry https://registry.npmjs.org/
+          npm config set //registry.npmjs.org/:_authToken=$NPM_TOKEN
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Verify npm package access
         run: |
@@ -114,14 +124,7 @@ jobs:
             exit 1
           fi
 
-      - name: Configure npm
-        run: |
-          npm config set registry https://registry.npmjs.org/
-          npm config set //registry.npmjs.org/:_authToken=$NPM_TOKEN
-          npm whoami
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Release
-        run: npx auto shipit
+        run: npm run release
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
