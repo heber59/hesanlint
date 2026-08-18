@@ -1,12 +1,11 @@
 {
   "plugins": ["npm", "released"],
   "baseBranch": "main",
-  "labels":
-    [
-      { "name": "major", "releaseType": "major" },
-      { "name": "minor", "releaseType": "minor" },
-      { "name": "patch", "releaseType": "patch" },
-      { "name": "skip-release", "releaseType": "skip" },
-      { "name": "release", "releaseType": "patch" },
-    ],
+  "labels": [
+    { "name": "major", "releaseType": "major" },
+    { "name": "minor", "releaseType": "minor" },
+    { "name": "patch", "releaseType": "patch" },
+    { "name": "skip-release", "releaseType": "skip" },
+    { "name": "release", "releaseType": "patch" }
+  ]
 }
